@@ -1,79 +1,103 @@
 // app/page.jsx
-import Image from "next/image";
+import Hero from "../components/Hero";
+import SearchBar from "../components/SearchBar";
 import { supabaseServer } from "../lib/supabase";
-import SearchBox from "../components/SearchBox";
 import DistrictGrid from "../components/DistrictGrid";
 
 export const dynamic = "force-dynamic";
 
 export default async function Home({ searchParams }) {
-  const sp = Object.fromEntries(Object.entries(searchParams || {}).filter(([,v]) => v));
+  const s = Object.fromEntries(Object.entries(searchParams || {}).filter(Boolean));
 
   const supabase = supabaseServer();
 
-  // Distinct locations & categories for the dropdowns
-  const [{ data: locRows }, { data: catRows }] = await Promise.all([
-    supabase.from("jobs").select("district").not("district", "is", null),
-    supabase.from("jobs").select("category").not("category", "is", null),
-  ]);
+  // Base query
+  let query = supabase
+    .from("public_jobs")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .limit(50);
 
-  const locations = Array.from(
-    new Set((locRows || []).map(r => (r.district || "").trim()).filter(Boolean))
-  ).sort();
+  // Filters
+  if (s.q) {
+    const q = `%${s.q}%`;
+    query = query.or(`title.ilike.${q},company.ilike.${q},location.ilike.${q},district.ilike.${q},category.ilike.${q}`);
+  }
+  if (s.district) query = query.ilike("district", `%${s.district}%`);
+  if (s.category) query = query.ilike("category", `%${s.category}%`);
 
-  const categories = Array.from(
-    new Set((catRows || []).map(r => (r.category || "").trim()).filter(Boolean))
-  ).sort();
+  const { data: jobs, error } = await query;
 
-  // District counts
-  const { data: districtCounts } = await supabase
-    .from("jobs")
-    .select("district, count:id", { count: "exact", head: false })
-    .neq("is_active", false)
-    .not("district", "is", null)
-    .group("district");
+  // For district cards we only need district names; count in JS (cheap for 50 rows)
+  const { data: districtsRaw } = await supabase
+    .from("public_jobs")
+    .select("district")
+    .limit(500);
+
+  const districtCounts = (() => {
+    const map = new Map();
+    (districtsRaw || []).forEach((r) => {
+      const key = (r.district || "Unknown").trim();
+      map.set(key, (map.get(key) || 0) + 1);
+    });
+    return Array.from(map.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 12); // top 12 districts
+  })();
 
   return (
-    <main className="home">
-      <section className="hero">
-        {/* Put your AI hero image in /public/hero.jpg (1920x1080 recommended) */}
-        <Image
-          src="/hero.jpg"
-          alt="People working, career growth"
-          fill
-          priority
-          className="hero-bg"
-        />
-        <div className="hero-overlay" />
-        <div className="hero-inner">
-          <div className="brand">
-            <div className="brand-icon" />
-            <div>
-              <div className="brand-title">Telugu Jobs</div>
-              <div className="brand-sub">AP & Telangana</div>
-            </div>
-            <a className="cta" href="/post-job">Post a Job</a>
-          </div>
-
-          <h1 className="hero-title">
-            Find Your Dream<br/>Job in <span>AP & Telangana</span>
-          </h1>
-          <p className="hero-sub">
-            Discover thousands of job opportunities across Andhra Pradesh and Telangana.
-            Your next career move starts here.
-          </p>
-
-          <SearchBox locations={locations} categories={categories} initial={sp} />
-        </div>
+    <>
+      <Hero />
+      <section className="container">
+        <SearchBar />
       </section>
 
-      <section className="section">
-        <div className="section-head">
-          <h2>Browse jobs by district</h2>
-          <p>Quickly jump to openings near you.</p>
-        </div>
-        <DistrictGrid items={districtCounts || []} />
+      {/* District cards */}
+      <section className="container section-spacing">
+        <h2 className="section-title">Jobs by District</h2>
+        <DistrictGrid items={districtCounts} />
       </section>
-    </main>
+
+      {/* Results */}
+      <section className="container section-spacing">
+        <h2 className="section-title">
+          {error ? "Couldn’t load jobs" : `Latest Jobs (${jobs?.length || 0})`}
+        </h2>
+
+        {!jobs?.length ? (
+          <p className="muted">No jobs yet. Add a row to <code>public_jobs</code> in Supabase.</p>
+        ) : (
+          <ul className="job-list">
+            {jobs.map((j) => (
+              <li key={j.id} className="job-card">
+                <a href={`/jobs/${j.id}`} className="job-title">{j.title}</a>
+                <div className="job-meta">
+                  <span>{j.company || "—"}</span>
+                  <span>•</span>
+                  <span>{j.location || j.district || j.state || "Location"}</span>
+                  {j.job_type ? (
+                    <>
+                      <span>•</span>
+                      <span className="badge">{j.job_type.replace("_", " ")}</span>
+                    </>
+                  ) : null}
+                </div>
+                {j.description ? (
+                  <p className="job-desc">{String(j.description).slice(0, 180)}{String(j.description).length > 180 ? "…" : ""}</p>
+                ) : null}
+                <div className="job-actions">
+                  <a className="btn" href={`/jobs/${j.id}`}>View Details</a>
+                  {j.external_url ? (
+                    <a className="btn btn-ghost" href={j.external_url} target="_blank" rel="noreferrer">
+                      Apply
+                    </a>
+                  ) : null}
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+    </>
   );
 }
