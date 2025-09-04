@@ -1,40 +1,79 @@
-import { supabaseServer } from '../lib/supabase'
-import JobCard from '../components/JobCard'
-import SearchBar from '../components/SearchBar'
+// app/page.jsx
+import Image from "next/image";
+import { supabaseServer } from "../lib/supabase";
+import SearchBox from "../components/SearchBox";
+import DistrictGrid from "../components/DistrictGrid";
 
-export const dynamic = 'force-dynamic'
+export const dynamic = "force-dynamic";
 
 export default async function Home({ searchParams }) {
-  const s = searchParams || {}
-  const supabase = supabaseServer()
+  const sp = Object.fromEntries(Object.entries(searchParams || {}).filter(([,v]) => v));
 
-  let q = supabase.from('jobs')
-    .select('*')
-    .order('created_at', { ascending: false })
-    .limit(60)
+  const supabase = supabaseServer();
 
-  if(s.state) q = q.ilike('state', `%${s.state}%`)
-  if(s.district) q = q.ilike('district', `%${s.district}%`)
-  if(s.category) q = q.ilike('category', `%${s.category}%`)
-  if(s.q) q = q.or(`title.ilike.%${s.q}%,company.ilike.%${s.q}%,location.ilike.%${s.q}%`)
+  // Distinct locations & categories for the dropdowns
+  const [{ data: locRows }, { data: catRows }] = await Promise.all([
+    supabase.from("jobs").select("district").not("district", "is", null),
+    supabase.from("jobs").select("category").not("category", "is", null),
+  ]);
 
-  const { data, error } = await q
+  const locations = Array.from(
+    new Set((locRows || []).map(r => (r.district || "").trim()).filter(Boolean))
+  ).sort();
+
+  const categories = Array.from(
+    new Set((catRows || []).map(r => (r.category || "").trim()).filter(Boolean))
+  ).sort();
+
+  // District counts
+  const { data: districtCounts } = await supabase
+    .from("jobs")
+    .select("district, count:id", { count: "exact", head: false })
+    .neq("is_active", false)
+    .not("district", "is", null)
+    .group("district");
 
   return (
-    <main>
+    <main className="home">
       <section className="hero">
-        <h1>Jobs in AP & Telangana</h1>
-        <p>Fresh, local, and fast. Built for candidates in Andhra Pradesh & Telangana.</p>
+        {/* Put your AI hero image in /public/hero.jpg (1920x1080 recommended) */}
+        <Image
+          src="/hero.jpg"
+          alt="People working, career growth"
+          fill
+          priority
+          className="hero-bg"
+        />
+        <div className="hero-overlay" />
+        <div className="hero-inner">
+          <div className="brand">
+            <div className="brand-icon" />
+            <div>
+              <div className="brand-title">Telugu Jobs</div>
+              <div className="brand-sub">AP & Telangana</div>
+            </div>
+            <a className="cta" href="/post-job">Post a Job</a>
+          </div>
+
+          <h1 className="hero-title">
+            Find Your Dream<br/>Job in <span>AP & Telangana</span>
+          </h1>
+          <p className="hero-sub">
+            Discover thousands of job opportunities across Andhra Pradesh and Telangana.
+            Your next career move starts here.
+          </p>
+
+          <SearchBox locations={locations} categories={categories} initial={sp} />
+        </div>
       </section>
 
-      <SearchBar />
-
-      {error && <div className="card" style={{borderColor:'var(--danger)'}}>Error: {error.message}</div>}
-      {!data?.length ? <div className="card">No jobs yet. Add rows to <code>public.jobs</code>.</div> :
-        <div className="grid">
-          {data.map(j => <JobCard key={j.id} job={j} />)}
+      <section className="section">
+        <div className="section-head">
+          <h2>Browse jobs by district</h2>
+          <p>Quickly jump to openings near you.</p>
         </div>
-      }
+        <DistrictGrid items={districtCounts || []} />
+      </section>
     </main>
-  )
+  );
 }
