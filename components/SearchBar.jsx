@@ -1,43 +1,71 @@
-'use client'
-import { useRouter, useSearchParams } from 'next/navigation'
-import { useState, useEffect } from 'react'
+// components/SearchBox.jsx
+"use client";
 
-export default function SearchBar(){
-  const r = useRouter()
-  const sp = useSearchParams()
-  const [q,setQ] = useState(sp.get('q') || '')
-  const [district,setDistrict] = useState(sp.get('district') || '')
-  const [category,setCategory] = useState(sp.get('category') || '')
-  const [state,setState] = useState(sp.get('state') || '')
+import { useRouter, useSearchParams } from "next/navigation";
+import { useState, useEffect } from "react";
 
-  useEffect(()=>{ setQ(sp.get('q')||'') },[sp])
+export default function SearchBox({ locations = [], categories = [], initial = {} }) {
+  const r = useRouter();
+  const sp = useSearchParams();
 
-  function submit(e){
-    e.preventDefault()
-    const p = new URLSearchParams()
-    if(q) p.set('q', q)
-    if(district) p.set('district', district)
-    if(category) p.set('category', category)
-    if(state) p.set('state', state)
-    r.push('/?'+p.toString())
+  const [q, setQ] = useState(initial.q || "");
+  const [district, setDistrict] = useState(initial.district || "");
+  const [category, setCategory] = useState(initial.category || "");
+
+  useEffect(() => {
+    // Sync if URL changes elsewhere
+    setQ(sp.get("q") || "");
+    setDistrict(sp.get("district") || "");
+    setCategory(sp.get("category") || "");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sp.toString()]);
+
+  function submit(e) {
+    e.preventDefault();
+    const params = new URLSearchParams();
+    if (q) params.set("q", q);
+    if (district) params.set("district", district);
+    if (category) params.set("category", category);
+    r.push(params.toString() ? `/jobs?${params}` : "/jobs");
   }
 
   return (
-    <form onSubmit={submit} className="card" style={{marginBottom:12}}>
-      <div className="label">Search jobs</div>
-      <input className="input" placeholder="Title / Company / Location" value={q} onChange={e=>setQ(e.target.value)} />
-      <div className="row" style={{marginTop:10}}>
-        <input className="input" placeholder="District" value={district} onChange={e=>setDistrict(e.target.value)} />
-        <input className="input" placeholder="Category (IT, Govt, Banking...)" value={category} onChange={e=>setCategory(e.target.value)} />
+    <form className="search" onSubmit={submit}>
+      <div className="search-row">
+        <div className="field">
+          <span className="icon">🔎</span>
+          <input
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder="Job title or keywords"
+            aria-label="Job title or keywords"
+          />
+        </div>
+
+        <div className="field">
+          <span className="icon">📍</span>
+          <select value={district} onChange={(e) => setDistrict(e.target.value)} aria-label="Select Location">
+            <option value="">Select Location</option>
+            {locations.map((d) => (
+              <option key={d} value={d}>{d}</option>
+            ))}
+          </select>
+        </div>
+
+        <div className="field">
+          <span className="icon">🗂️</span>
+          <select value={category} onChange={(e) => setCategory(e.target.value)} aria-label="Job Category">
+            <option value="">Job Category</option>
+            {categories.map((c) => (
+              <option key={c} value={c}>{c}</option>
+            ))}
+          </select>
+        </div>
       </div>
-      <div className="row" style={{marginTop:10}}>
-        <select className="input" value={state} onChange={e=>setState(e.target.value)}>
-          <option value="">Any State</option>
-          <option value="Telangana">Telangana</option>
-          <option value="Andhra Pradesh">Andhra Pradesh</option>
-        </select>
-        <button className="btn" type="submit">Search</button>
-      </div>
+
+      <button className="search-btn" type="submit">
+        <span className="btn-icon">🔎</span> Search Jobs
+      </button>
     </form>
-  )
+  );
 }
