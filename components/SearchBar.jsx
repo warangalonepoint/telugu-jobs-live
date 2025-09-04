@@ -1,24 +1,22 @@
-// components/SearchBox.jsx
+// components/SearchBar.jsx
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 
-export default function SearchBox({ locations = [], categories = [], initial = {} }) {
-  const r = useRouter();
+export default function SearchBar() {
+  const router = useRouter();
   const sp = useSearchParams();
 
-  const [q, setQ] = useState(initial.q || "");
-  const [district, setDistrict] = useState(initial.district || "");
-  const [category, setCategory] = useState(initial.category || "");
+  const [q, setQ] = useState(sp.get("q") || "");
+  const [district, setDistrict] = useState(sp.get("district") || "");
+  const [category, setCategory] = useState(sp.get("category") || "");
 
   useEffect(() => {
-    // Sync if URL changes elsewhere
     setQ(sp.get("q") || "");
     setDistrict(sp.get("district") || "");
     setCategory(sp.get("category") || "");
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sp.toString()]);
+  }, [sp]);
 
   function submit(e) {
     e.preventDefault();
@@ -26,46 +24,43 @@ export default function SearchBox({ locations = [], categories = [], initial = {
     if (q) params.set("q", q);
     if (district) params.set("district", district);
     if (category) params.set("category", category);
-    r.push(params.toString() ? `/jobs?${params}` : "/jobs");
+    router.push(`/?${params.toString()}`);
   }
 
   return (
-    <form className="search" onSubmit={submit}>
-      <div className="search-row">
+    <form onSubmit={submit} className="search-card">
+      <div className="row">
         <div className="field">
-          <span className="icon">🔎</span>
+          <label>Job title or keywords</label>
           <input
+            placeholder="e.g., React Developer"
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            placeholder="Job title or keywords"
-            aria-label="Job title or keywords"
           />
         </div>
 
         <div className="field">
-          <span className="icon">📍</span>
-          <select value={district} onChange={(e) => setDistrict(e.target.value)} aria-label="Select Location">
-            <option value="">Select Location</option>
-            {locations.map((d) => (
-              <option key={d} value={d}>{d}</option>
-            ))}
-          </select>
+          <label>Select Location</label>
+          <input
+            placeholder="District or city"
+            value={district}
+            onChange={(e) => setDistrict(e.target.value)}
+          />
         </div>
 
         <div className="field">
-          <span className="icon">🗂️</span>
-          <select value={category} onChange={(e) => setCategory(e.target.value)} aria-label="Job Category">
-            <option value="">Job Category</option>
-            {categories.map((c) => (
-              <option key={c} value={c}>{c}</option>
-            ))}
-          </select>
+          <label>Job Category</label>
+          <input
+            placeholder="IT, Govt, Banking…"
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
+          />
         </div>
       </div>
 
-      <button className="search-btn" type="submit">
-        <span className="btn-icon">🔎</span> Search Jobs
-      </button>
+      <div className="actions">
+        <button className="btn" type="submit">Search Jobs</button>
+      </div>
     </form>
   );
 }
