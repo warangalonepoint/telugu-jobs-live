@@ -1,1 +1,17 @@
-Modern digital illustration of job seekers and professionals with laptops, futuristic office environment blended with iconic local monuements, flat minimal vector, clean gradient background, orange + purple color scheme, website hero image, global + local theme.1024×1024 → for previews/social shar
+// app/layout.jsx
+import "./globals.css";
+
+export const metadata = {
+  title: "Telugu Jobs — AP & Telangana",
+  description: "Find your dream job in Andhra Pradesh & Telangana. Fresh, local, and fast.",
+};
+
+export default function RootLayout({ children }) {
+  return (
+    <html lang="en">
+      <body>
+        <main>{children}</main>
+      </body>
+    </html>
+  );
+}
