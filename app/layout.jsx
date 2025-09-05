@@ -1,29 +1,39 @@
-export const metadata = {
-  title: "Telugu Jobs – AP & Telangana",
-  description: "Find your dream job in Andhra Pradesh & Telangana. Powered by Next.js + Supabase.",
-};
-
 import "./globals.css";
+import { Inter } from "next/font/google";
+
+const inter = Inter({ subsets: ["latin"] });
+
+export const metadata = {
+  title: "Telugu Jobs — AP & Telangana",
+  description: "Fresh, local jobs for AP & Telangana. Built on Next.js + Supabase.",
+};
 
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
-      <body className="min-h-screen flex flex-col">
-        <header className="bg-gradient-to-r from-orange-500 to-pink-500 text-white shadow-md">
-          <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
-            <h1 className="text-2xl font-bold">Telugu Jobs</h1>
-            <nav>
-              <a href="/" className="px-3">Home</a>
-              <a href="/post-job" className="px-3">Post a Job</a>
-            </nav>
+      <body className={`${inter.className} bg-[rgb(var(--bg))] text-[rgb(var(--fg))]`}>
+        {/* Top bar */}
+        <header className="border-b border-gray-200/70">
+          <div className="container-app flex items-center justify-between py-4">
+            <div className="flex items-center gap-3">
+              <div className="grid h-10 w-10 place-items-center rounded-2xl bg-orange-500 text-white font-bold">
+                TJ
+              </div>
+              <div>
+                <div className="text-lg font-semibold">Telugu Jobs</div>
+                <div className="text-xs text-gray-500">AP &amp; Telangana</div>
+              </div>
+            </div>
+
+            <a href="/post-job" className="btn btn-primary">
+              Post a Job
+            </a>
           </div>
         </header>
-        
-        <main className="flex-1 max-w-6xl mx-auto px-4 py-8">
-          {children}
-        </main>
-        
-        <footer className="bg-gray-800 text-gray-200 text-center py-4">
+
+        <main className="container-app py-8">{children}</main>
+
+        <footer className="container-app footer">
           © {new Date().getFullYear()} Telugu Jobs • Built on Next.js + Supabase
         </footer>
       </body>
