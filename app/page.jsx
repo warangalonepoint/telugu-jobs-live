@@ -1,103 +1,112 @@
-// app/page.jsx
-import Hero from "../components/Hero";
-import SearchBar from "../components/SearchBar";
-import { supabaseServer } from "../lib/supabase";
-import DistrictGrid from "../components/DistrictGrid";
+import { createClient } from "@supabase/supabase-js";
+import Link from "next/link";
 
-export const dynamic = "force-dynamic";
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+const supabase = createClient(supabaseUrl, supabaseKey);
 
-export default async function Home({ searchParams }) {
-  const s = Object.fromEntries(Object.entries(searchParams || {}).filter(Boolean));
-
-  const supabase = supabaseServer();
-
-  // Base query
-  let query = supabase
+async function getJobs() {
+  const { data, error } = await supabase
     .from("public_jobs")
-    .select("*")
+    .select("id,title,company,location,category,job_type,salary_min,salary_max,salary_currency")
     .order("created_at", { ascending: false })
-    .limit(50);
+    .limit(10);
 
-  // Filters
-  if (s.q) {
-    const q = `%${s.q}%`;
-    query = query.or(`title.ilike.${q},company.ilike.${q},location.ilike.${q},district.ilike.${q},category.ilike.${q}`);
+  if (error) {
+    console.error(error);
+    return [];
   }
-  if (s.district) query = query.ilike("district", `%${s.district}%`);
-  if (s.category) query = query.ilike("category", `%${s.category}%`);
+  return data ?? [];
+}
 
-  const { data: jobs, error } = await query;
-
-  // For district cards we only need district names; count in JS (cheap for 50 rows)
-  const { data: districtsRaw } = await supabase
-    .from("public_jobs")
-    .select("district")
-    .limit(500);
-
-  const districtCounts = (() => {
-    const map = new Map();
-    (districtsRaw || []).forEach((r) => {
-      const key = (r.district || "Unknown").trim();
-      map.set(key, (map.get(key) || 0) + 1);
-    });
-    return Array.from(map.entries())
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 12); // top 12 districts
-  })();
+export default async function HomePage() {
+  const jobs = await getJobs();
 
   return (
-    <>
-      <Hero />
-      <section className="container">
-        <SearchBar />
+    <div className="space-y-8">
+      {/* HERO */}
+      <section className="hero">
+        <div className="max-w-3xl">
+          <h1 className="text-4xl sm:text-5xl font-extrabold leading-tight">
+            Find Your Dream <br /> Job in <br /> AP &amp; Telangana
+          </h1>
+          <p className="mt-4 text-white/90">
+            Discover thousands of job opportunities across Andhra Pradesh and Telangana. Your next
+            career move starts here.
+          </p>
+        </div>
+
+        {/* Search box */}
+        <div className="mt-8 grid gap-3 rounded-2xl bg-white/10 p-4 backdrop-blur">
+          <input className="input" placeholder="Job title or keywords" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <select className="select">
+              <option>Select Location</option>
+              <option>Hyderabad</option>
+              <option>Warangal</option>
+              <option>Vijayawada</option>
+            </select>
+            <select className="select">
+              <option>Job Category</option>
+              <option>IT</option>
+              <option>Design</option>
+              <option>Government</option>
+            </select>
+          </div>
+          <button className="btn btn-primary">
+            Search Jobs
+          </button>
+        </div>
       </section>
 
-      {/* District cards */}
-      <section className="container section-spacing">
-        <h2 className="section-title">Jobs by District</h2>
-        <DistrictGrid items={districtCounts} />
-      </section>
+      {/* LATEST JOBS */}
+      <section>
+        <h2 className="mb-4 text-xl font-semibold">Latest Jobs</h2>
 
-      {/* Results */}
-      <section className="container section-spacing">
-        <h2 className="section-title">
-          {error ? "Couldn’t load jobs" : `Latest Jobs (${jobs?.length || 0})`}
-        </h2>
+        <div className="grid gap-4">
+          {jobs.length === 0 && (
+            <div className="card">
+              <div className="card-body">
+                <p className="text-gray-600">No jobs yet. Add a row to <code>public_jobs</code> in Supabase.</p>
+              </div>
+            </div>
+          )}
 
-        {!jobs?.length ? (
-          <p className="muted">No jobs yet. Add a row to <code>public_jobs</code> in Supabase.</p>
-        ) : (
-          <ul className="job-list">
-            {jobs.map((j) => (
-              <li key={j.id} className="job-card">
-                <a href={`/jobs/${j.id}`} className="job-title">{j.title}</a>
-                <div className="job-meta">
-                  <span>{j.company || "—"}</span>
-                  <span>•</span>
-                  <span>{j.location || j.district || j.state || "Location"}</span>
-                  {j.job_type ? (
-                    <>
-                      <span>•</span>
-                      <span className="badge">{j.job_type.replace("_", " ")}</span>
-                    </>
-                  ) : null}
+          {jobs.map((job) => {
+            const salary =
+              job.salary_min && job.salary_max
+                ? `${job.salary_currency || "INR"} ${job.salary_min} – ${job.salary_max}`
+                : "—";
+
+            return (
+              <div key={job.id} className="card hover:shadow-md transition">
+                <div className="card-body">
+                  <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <Link href={`/jobs/${job.id}`} className="text-lg font-semibold hover:underline">
+                        {job.title}
+                      </Link>
+                      <div className="text-sm text-gray-600">
+                        {job.company} • {job.location}
+                      </div>
+                    </div>
+                    <div className="mt-2 flex items-center gap-2 sm:mt-0">
+                      <span className="rounded-full bg-orange-100 px-3 py-1 text-xs font-medium text-orange-700">
+                        {job.job_type?.replace("_", " ") || "FULL TIME"}
+                      </span>
+                      <span className="rounded-full bg-blue-100 px-3 py-1 text-xs font-medium text-blue-700">
+                        {job.category || "General"}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="mt-2 text-sm text-gray-700">Salary: {salary}</div>
                 </div>
-                {j.description ? (
-                  <p className="job-desc">{String(j.description).slice(0, 180)}{String(j.description).length > 180 ? "…" : ""}</p>
-                ) : null}
-                <div className="job-actions">
-                  <a className="btn" href={`/jobs/${j.id}`}>View Details</a>
-                  {j.external_url ? (
-                    <a className="btn btn-ghost" href={j.external_url} target="_blank" rel="noreferrer">
-                      Apply
-                    </a>
-                  ) : null}
-                </div>
-              </li>
-            ))}
-          </ul>
-        )}
+              </div>
+            );
+          })}
+        </div>
       </section>
-    </>
+    </div>
   );
 }
