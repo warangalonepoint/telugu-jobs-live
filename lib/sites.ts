@@ -1,16 +1,13 @@
-type BuildArgs = { district: string; q: string };
+const enc = (s = "") => encodeURIComponent(s.trim());
+const qfmt = (district, q) => (q ? `${q} ${district} jobs` : `${district} jobs`);
 
-const enc = (s: string) => encodeURIComponent(s.trim());
-const qx = (district: string, q: string) =>
-  q ? `${enc(q)} ${enc(district)} jobs` : `${enc(district)} jobs`;
-
-export function buildSiteLinks({ district, q }: BuildArgs) {
-  const pretty = (url: string) => url.replace(/^https?:\/\//, "");
+export function buildSiteLinks({ district, q }) {
+  const pretty = (url) => url.replace(/^https?:\/\//, "");
 
   return [
     {
       name: "Google Jobs",
-      url: `https://www.google.com/search?q=${qx(district, q)}`,
+      url: `https://www.google.com/search?q=${enc(qfmt(district, q))}`,
       caption: "Aggregated listings via Google",
     },
     {
@@ -42,6 +39,6 @@ export function buildSiteLinks({ district, q }: BuildArgs) {
       name: "Apna Jobs",
       url: `https://apna.co/jobs/search?query=${enc(q || "job")}&location=${enc(district)}`,
       caption: "Mobile-first local jobs",
-    }
-  ].map(s => ({ ...s, pretty: pretty(s.url) }));
+    },
+  ].map((s) => ({ ...s, pretty: pretty(s.url) }));
 }
