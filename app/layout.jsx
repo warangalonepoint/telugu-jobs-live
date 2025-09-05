@@ -2,28 +2,30 @@ import "./globals.css";
 
 export const metadata = {
   title: "Telugu Jobs – AP & Telangana",
-  description: "Latest jobs across Andhra Pradesh & Telangana with fast local search.",
+  description: "Unified job search launcher + local job postings for Andhra Pradesh & Telangana.",
 };
 
 export default function RootLayout({ children }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className="min-h-screen">
-        <div className="container mx-auto p-4">
-          <header className="flex justify-between items-center mb-6">
-            <div className="text-xl font-bold">Telugu Jobs</div>
-            <nav className="space-x-4">
-              <a href="/" className="text-gray-600 hover:text-black">Home</a>
-              <a href="/post-job" className="text-blue-600 hover:text-blue-800">Post a Job</a>
-            </nav>
-          </header>
+      <body className="min-h-screen bg-gray-950 text-white">
+        {/* Site Header */}
+        <header className="p-4 flex justify-between items-center border-b border-gray-800">
+          <h1 className="text-lg font-bold">Telugu Jobs</h1>
+          <nav className="flex gap-4 text-sm">
+            <a href="/" className="hover:underline">Home</a>
+            <a href="/jobs" className="hover:underline">Jobs</a>
+            <a href="/post-job" className="hover:underline">Post a Job</a>
+          </nav>
+        </header>
 
-          {children}
+        {/* Page Content */}
+        <main className="p-4">{children}</main>
 
-          <footer className="text-center text-gray-500 mt-6">
-            © {new Date().getFullYear()} Telugu Jobs · Built on Next.js + Supabase
-          </footer>
-        </div>
+        {/* Site Footer */}
+        <footer className="p-4 text-center text-xs text-gray-400 border-t border-gray-800">
+          © {new Date().getFullYear()} Telugu Jobs · Built on Next.js + Supabase
+        </footer>
       </body>
     </html>
   );
