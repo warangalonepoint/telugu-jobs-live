@@ -1,64 +1,119 @@
 "use client";
-import { useState, useMemo } from "react";
 
-const SITES = [
-  { name: "Google Jobs", tag: "IN", build: (d, q) => `https://www.google.com/search?q=${encodeURIComponent((q? q+' ' : '') + d + " jobs")}` },
-  { name: "LinkedIn", tag: "IN", build: (d, q) => `https://www.linkedin.com/jobs/search/?keywords=${encodeURIComponent(q || "jobs")}&location=${encodeURIComponent(d + ", India")}` },
-  { name: "Naukri", tag: "IN", build: (d, q) => `https://www.naukri.com/${encodeURIComponent((q||"jobs")+"-in-"+d)}` },
-  { name: "Indeed", tag: "IN", build: (d, q) => `https://in.indeed.com/jobs?q=${encodeURIComponent(q||"")}&l=${encodeURIComponent(d)}` },
-  { name: "OLX (Jobs)", tag: "Local", build: (d, q) => `https://www.olx.in/jobs_c3?q=${encodeURIComponent(q||"")}&filter_enum_state[]=telangana&search[description]=${encodeURIComponent(d)}` },
-  { name: "Freshersworld", tag: "IN", build: (d, q) => `https://www.freshersworld.com/jobs-in-${encodeURIComponent(d)}` },
-  { name: "Apna", tag: "Local", build: (d, q) => `https://apna.co/jobs/search?query=${encodeURIComponent(q||"")}&location=${encodeURIComponent(d)}` },
-];
+import { useMemo, useState } from "react";
+import Link from "next/link";
+import { DISTRICTS } from "@/data/districts";
+import { buildSiteLinks } from "@/lib/sites";
 
-const DISTRICTS = [
-  "Warangal","Karimnagar","Khammam","Nizamabad","Adilabad","Medak","Mahbubnagar",
-  "Nalgonda","Rangareddy","Hyderabad","Visakhapatnam","Vijayawada","Guntur","Tirupati","Kurnool","Anantapur","Amaravati","Kadapa","Nellore"
-];
-
-export default function Launcher() {
+export default function HomePage() {
   const [district, setDistrict] = useState("Warangal");
   const [q, setQ] = useState("");
 
-  const links = useMemo(() => SITES.map(s => ({
-    ...s,
-    href: s.build(district, q)
-  })), [district, q]);
+  const links = useMemo(() => buildSiteLinks({ district, q }), [district, q]);
+
+  const pushRoute = () => {
+    const kw = (q || "jobs").trim().replace(/\s+/g, "-").toLowerCase();
+    const dist = district.trim().replace(/\s+/g, "-").toLowerCase();
+    // navigate to SEO route (opens in same tab)
+    window.location.href = `/jobs/${dist}/${kw}`;
+  };
+
+  const quick = ["Accountant","Driver","Teacher","Receptionist","Sales","Nurse","Software","Data Entry","Security"];
 
   return (
-    <main className="max-w-6xl mx-auto px-4 py-8">
-      <header className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">Find jobs fast</h1>
-        <a href="/jobs" className="text-sm underline">View Posted Jobs →</a>
-      </header>
+    <main className="max-w-6xl mx-auto px-4 pb-16">
+      {/* HERO / SEARCH */}
+      <section className="card mt-6">
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div>
+            <h1 className="text-2xl font-semibold">Find jobs across AP & Telangana</h1>
+            <p className="text-sm text-white/60">
+              One launcher → Naukri, Indeed, LinkedIn, Google Jobs, OLX, Freshersworld, Apna.
+            </p>
+          </div>
+          <Link href="https://www.warangalonestop.in" target="_blank" className="btn">
+            Visit WarangalOneStop.in
+          </Link>
+        </div>
 
-      <section className="card p-4">
-        <div className="grid gap-3 md:grid-cols-3">
+        <div className="mt-6 grid gap-4 md:grid-cols-3">
           <div className="md:col-span-1">
-            <label className="text-sm block mb-1">District</label>
-            <select className="input w-full" value={district} onChange={e=>setDistrict(e.target.value)}>
-              {DISTRICTS.map(d => <option key={d} value={d}>{d}</option>)}
+            <label className="text-xs text-white/60">District</label>
+            <select
+              className="input mt-2"
+              value={district}
+              onChange={(e) => setDistrict(e.target.value)}
+            >
+              {DISTRICTS.map((d) => (
+                <option key={d} value={d}>{d}</option>
+              ))}
             </select>
           </div>
-
           <div className="md:col-span-2">
-            <label className="text-sm block mb-1">Keyword (optional)</label>
-            <input className="input w-full" placeholder="e.g., accountant, driver, teacher" value={q} onChange={e=>setQ(e.target.value)} />
+            <label className="text-xs text-white/60">Keyword (optional)</label>
+            <div className="mt-2 flex gap-2">
+              <input
+                className="input"
+                placeholder="e.g., accountant, driver, teacher"
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && pushRoute()}
+              />
+              <button className="btn" onClick={pushRoute}>Search</button>
+            </div>
+            <p className="mt-2 text-xs text-white/50">
+              Tip: leave blank to browse all district jobs per site.
+            </p>
           </div>
         </div>
-        <p className="mt-2 text-xs text-white/60">Tip: leave keyword empty to browse all jobs for that district per site.</p>
+
+        <div className="mt-4 flex flex-wrap gap-2">
+          {quick.map((k) => (
+            <button key={k} className="btn text-xs" onClick={() => setQ(k)}>
+              {k}
+            </button>
+          ))}
+        </div>
       </section>
 
-      <section className="mt-6 grid gap-4 md:grid-cols-3">
-        {links.map(s => (
-          <a key={s.name} href={s.href} target="_blank" rel="noreferrer" className="card hover:opacity-90">
-            <div className="flex items-center justify-between">
-              <h3 className="font-semibold">{s.name}</h3>
-              <span className="text-[10px] text-white/60">{s.tag}</span>
-            </div>
-            <p className="text-xs mt-1 break-all">{s.href}</p>
-          </a>
-        ))}
+      {/* CARDS */}
+      <section className="mt-6">
+        <h3 className="mb-3 text-base font-semibold">Open on top sites</h3>
+        <div className="site-grid">
+          {links.map((site) => (
+            <a
+              key={site.name}
+              className="card hover:scale-[1.01] transition"
+              href={site.url}
+              target="_blank"
+              rel="noreferrer"
+              title={`Open ${site.name}`}
+            >
+              <div className="flex items-center justify-between">
+                <div className="text-sm font-semibold">{site.name}</div>
+                <span className="text-[10px] text-white/50">↗</span>
+              </div>
+              <p className="mt-2 text-sm text-white/70">{site.caption}</p>
+              <div className="mt-3 text-xs text-white/40 break-all">{site.pretty}</div>
+            </a>
+          ))}
+        </div>
+      </section>
+
+      {/* SEO Links */}
+      <section className="mt-10 card">
+        <h4 className="text-sm font-semibold">Popular quick routes</h4>
+        <div className="mt-3 flex flex-wrap gap-2">
+          {quick.slice(0,6).map((k) => {
+            const kw = k.toLowerCase().replace(/\s+/g,"-");
+            const dist = district.toLowerCase().replace(/\s+/g,"-");
+            return (
+              <Link key={k} href={`/jobs/${dist}/${kw}`} className="btn text-xs">
+                {district} • {k}
+              </Link>
+            );
+          })}
+        </div>
       </section>
     </main>
   );
