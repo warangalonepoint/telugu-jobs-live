@@ -1,36 +1,40 @@
-import { supabaseServer } from '../../../lib/supabase'
+"use client";
+import { useEffect, useState } from "react";
+import { supabase } from "@/lib/supabase";
 
-export const dynamic = 'force-dynamic'
+export default function JobsPage() {
+  const [jobs, setJobs] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-export default async function JobPage({ params }){
-  const supabase = supabaseServer()
-  const { data: job, error } = await supabase.from('jobs').select('*').eq('id', params.id).single()
+  useEffect(() => {
+    (async () => {
+      const { data, error } = await supabase
+        .from("jobs")
+        .select("id, title, company, location")
+        .order("id", { ascending: false })
+        .limit(50);
+      if (error) setError(error.message);
+      else setJobs(data || []);
+      setLoading(false);
+    })();
+  }, []);
 
-  if(error || !job) return <div className="card">Job not found.</div>
-
-  const jsonLd = {
-    "@context": "https://schema.org",
-    "@type": "JobPosting",
-    "title": job.title,
-    "employmentType": job.job_type || "FULL_TIME",
-    "hiringOrganization": { "@type": "Organization", "name": job.company || "Employer" },
-    "jobLocation": { "@type": "Place", "address": { "@type":"PostalAddress", "addressLocality": job.location || job.district, "addressRegion": job.state, "addressCountry":"IN" } },
-    "datePosted": job.created_at,
-    "validThrough": job.expires_at || undefined,
-    "description": job.description
-  }
+  if (loading) return <div className="p-4">Loading jobs…</div>;
+  if (error) return <div className="p-4 text-red-500">Error: {error}</div>;
 
   return (
-    <article className="card">
-      <h1>{job.title}</h1>
-      <div className="small">{job.company} • {(job.location || job.district)}, {job.state}</div>
-      <div className="small" style={{marginTop:6}}>{job.category} • {job.job_type}</div>
-      <div style={{marginTop:12,whiteSpace:'pre-wrap'}}>{job.description}</div>
-      <div style={{marginTop:16,display:'flex',gap:10}}>
-        {job.external_url && <a className="btn" href={job.external_url} target="_blank">Apply</a>}
-        <a href="/" className="btn ghost">← Back</a>
-      </div>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
-    </article>
-  )
+    <main className="p-6 max-w-3xl mx-auto">
+      <h1 className="text-2xl font-bold mb-6">Latest Jobs</h1>
+      <ul className="space-y-4">
+        {jobs.map((j) => (
+          <li key={j.id} className="border p-4 rounded">
+            <h2 className="text-lg font-semibold">{j.title}</h2>
+            <p className="text-gray-600">{j.company}</p>
+            <p className="text-gray-500">{j.location}</p>
+          </li>
+        ))}
+      </ul>
+    </main>
+  );
 }
