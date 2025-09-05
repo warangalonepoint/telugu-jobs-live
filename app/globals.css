@@ -1,20 +1,75 @@
+/* Tailwind layers */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Custom global styles */
+/* ---------- CSS Variables (light/dark ready) ---------- */
+:root {
+  --bg: 255 255 255;         /* white */
+  --fg: 17 24 39;            /* gray-900 */
+  --muted: 107 114 128;      /* gray-500 */
+  --card: 255 255 255;       /* white */
+  --border: 229 231 235;     /* gray-200 */
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: 3 7 18;            /* gray-950 */
+    --fg: 243 244 246;       /* gray-100 */
+    --muted: 156 163 175;    /* gray-400 */
+    --card: 17 24 39;        /* gray-900 */
+    --border: 31 41 55;      /* gray-800 */
+  }
+}
+
+/* ---------- Base Resets ---------- */
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+
 body {
-  @apply bg-gray-50 text-gray-900 font-sans;
+  color: rgb(var(--fg));
+  background: rgb(var(--bg));
+  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Inter, "Helvetica Neue", Arial, "Apple Color Emoji", "Segoe UI Emoji";
 }
 
-h1, h2, h3, h4 {
-  @apply font-bold text-gray-800;
+/* ---------- App Shell ---------- */
+.container-app {
+  @apply mx-auto max-w-6xl px-4 sm:px-6 lg:px-8;
 }
 
-a {
-  @apply text-blue-600 hover:underline;
+/* ---------- Hero ---------- */
+.hero {
+  @apply rounded-2xl p-6 sm:p-10 text-white shadow;
+  background: linear-gradient(135deg, #f97316 0%, #ec4899 100%);
 }
 
-button {
-  @apply bg-orange-500 text-white px-4 py-2 rounded-lg hover:bg-orange-600 transition;
+/* ---------- Inputs ---------- */
+.input, .select {
+  @apply w-full rounded-xl border border-gray-300 bg-white/90 px-4 py-3 text-sm outline-none shadow-sm
+         focus:border-blue-500 focus:ring-2 focus:ring-blue-200;
+}
+
+.select { @apply appearance-none; }
+
+/* ---------- Buttons ---------- */
+.btn {
+  @apply inline-flex items-center justify-center rounded-xl px-5 py-3 text-sm font-semibold transition;
+}
+
+.btn-primary {
+  @apply bg-orange-500 text-white hover:bg-orange-600 active:bg-orange-700 shadow;
+}
+
+/* ---------- Cards ---------- */
+.card {
+  @apply rounded-xl border border-gray-200 bg-white shadow-sm;
+}
+.card-body { @apply p-4; }
+
+/* ---------- Links ---------- */
+a { @apply text-blue-700 hover:underline; }
+
+/* ---------- Footer ---------- */
+.footer {
+  @apply mt-10 border-t border-gray-200 py-6 text-sm text-gray-500;
 }
