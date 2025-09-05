@@ -1,122 +1,104 @@
-import { createClient } from "@supabase/supabase-js";
-import Link from "next/link";
-import DistrictGrid from "@/components/DistrictGrid";
+"use client";
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-);
+import { useMemo, useState } from "react";
+import { Globe, Search } from "lucide-react";
+import { DISTRICTS } from "@/data/districts";
+import { buildSiteLinks } from "@/lib/sites";
 
-async function getJobs() {
-  const { data, error } = await supabase
-    .from("public_jobs")
-    .select("id,title,company,location,category,job_type,salary_min,salary_max,salary_currency,created_at")
-    .order("created_at", { ascending: false })
-    .limit(10);
-  if (error) { console.error(error); return []; }
-  return data ?? [];
-}
-
-async function getDistrictCounts() {
-  // Works even if some rows have NULL district
-  const { data, error } = await supabase
-    .rpc("count_by_district"); // if you created a function; else fallback below
-
-  if (error) {
-    // Fallback query if no RPC function exists
-    const { data: rows, error: err2 } = await supabase
-      .from("public_jobs")
-      .select("district")
-      .neq("is_active", false);
-    if (err2) { console.error(err2); return []; }
-
-    // group in node (SSR)
-    const map = new Map();
-    rows.forEach(r => {
-      const d = r.district || "";
-      map.set(d, (map.get(d) || 0) + 1);
-    });
-    return Array.from(map, ([district, count]) => ({ district, count })).sort((a,b)=>b.count-a.count).slice(0,12);
-  }
-  return data;
-}
-
-export default async function HomePage() {
-  const [jobs, districts] = await Promise.all([getJobs(), getDistrictCounts()]);
+export default function Page() {
+  const [district, setDistrict] = useState("Warangal");
+  const [q, setQ] = useState("");
+  const links = useMemo(() => buildSiteLinks({ district, q }), [district, q]);
 
   return (
-    <div className="space-y-8">
-      {/* HERO */}
-      <section className="hero">
-        <div className="max-w-3xl">
-          <h1 className="text-4xl sm:text-5xl font-extrabold leading-tight">
-            Find Your Dream <br /> Job in <br /> AP &amp; Telangana
-          </h1>
-          <p className="mt-4 text-white/90">
-            Discover thousands of job opportunities across Andhra Pradesh and Telangana. Your next
-            career move starts here.
-          </p>
-        </div>
-
-        {/* Search UI (static for now) */}
-        <div className="mt-8 grid gap-3 rounded-2xl bg-white/10 p-4 backdrop-blur">
-          <input className="input" placeholder="Job title or keywords" />
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <select className="select"><option>Select Location</option></select>
-            <select className="select"><option>Job Category</option></select>
+    <main className="max-w-6xl mx-auto px-4 pb-16">
+      <section className="card">
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div>
+            <h2 className="text-xl font-semibold">Find jobs fast</h2>
+            <p className="text-sm text-white/60">
+              District-filtered deep links across top portals. No scraping. No bs.
+            </p>
           </div>
-          <button className="btn btn-primary">Search Jobs</button>
+          <a
+            href="https://www.warangalonestop.in"
+            target="_blank"
+            className="btn"
+          >
+            <Globe className="mr-2 h-4 w-4" />
+            WarangalOneStop.in
+          </a>
         </div>
-      </section>
 
-      {/* DISTRICTS */}
-      <DistrictGrid rows={districts} />
-
-      {/* LATEST JOBS */}
-      <section>
-        <h2 className="mb-4 text-xl font-semibold">Latest Jobs</h2>
-        <div className="grid gap-4">
-          {jobs.length === 0 && (
-            <div className="card">
-              <div className="card-body">
-                <p className="text-gray-600">No jobs yet. Add a row to <code>public_jobs</code> in Supabase.</p>
-              </div>
+        <div className="mt-6 grid gap-4 md:grid-cols-3">
+          <div className="md:col-span-1">
+            <label className="text-xs text-white/60">District</label>
+            <select
+              className="input mt-2"
+              value={district}
+              onChange={(e) => setDistrict(e.target.value)}
+            >
+              {DISTRICTS.map((d) => (
+                <option key={d} value={d}>{d}</option>
+              ))}
+            </select>
+          </div>
+          <div className="md:col-span-2">
+            <label className="text-xs text-white/60">Keyword (optional)</label>
+            <div className="mt-2 flex gap-2">
+              <input
+                className="input"
+                placeholder="e.g., accountant, driver, teacher"
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+              />
+              <button className="btn">
+                <Search className="h-4 w-4" />
+              </button>
             </div>
-          )}
-
-          {jobs.map((job) => {
-            const salary =
-              job.salary_min && job.salary_max
-                ? `${job.salary_currency || "INR"} ${job.salary_min} – ${job.salary_max}`
-                : "—";
-            return (
-              <div key={job.id} className="card hover:shadow-md transition">
-                <div className="card-body">
-                  <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                      <Link href={`/jobs/${job.id}`} className="text-lg font-semibold hover:underline">
-                        {job.title}
-                      </Link>
-                      <div className="text-sm text-gray-600">
-                        {job.company} • {job.location}
-                      </div>
-                    </div>
-                    <div className="mt-2 flex items-center gap-2 sm:mt-0">
-                      <span className="rounded-full bg-orange-100 px-3 py-1 text-xs font-medium text-orange-700">
-                        {job.job_type?.replace("_", " ") || "FULL TIME"}
-                      </span>
-                      <span className="rounded-full bg-blue-100 px-3 py-1 text-xs font-medium text-blue-700">
-                        {job.category || "General"}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="mt-2 text-sm text-gray-700">Salary: {salary}</div>
-                </div>
-              </div>
-            );
-          })}
+            <p className="mt-2 text-xs text-white/50">
+              Tip: leave blank to browse all district jobs per portal.
+            </p>
+          </div>
         </div>
       </section>
-    </div>
+
+      <section className="mt-6">
+        <h3 className="mb-3 text-base font-semibold">Open on top sites</h3>
+        <div className="site-grid">
+          {links.map((site) => (
+            <a
+              key={site.name}
+              className="card hover:scale-[1.01] transition"
+              href={site.url}
+              target="_blank"
+            >
+              <div className="flex items-center justify-between">
+                <div className="text-sm font-medium">{site.name}</div>
+                <span className="text-[10px] text-white/50">{site.regionLabel}</span>
+              </div>
+              <p className="mt-2 text-sm text-white/70">{site.caption}</p>
+              <div className="mt-3 text-xs text-white/40 break-all">{site.pretty}</div>
+            </a>
+          ))}
+        </div>
+      </section>
+
+      <section className="mt-10 card">
+        <h4 className="text-sm font-semibold">Quick buckets</h4>
+        <div className="mt-3 flex flex-wrap gap-2">
+          {["Accountant","Driver","Teacher","Receptionist","Sales","Nurse","Software"].map(k => (
+            <button
+              key={k}
+              onClick={() => setQ(k)}
+              className="btn text-xs"
+              title={`Search ${k}`}
+            >
+              {k}
+            </button>
+          ))}
+        </div>
+      </section>
+    </main>
   );
 }
