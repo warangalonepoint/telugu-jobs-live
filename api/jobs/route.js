@@ -1,29 +1,53 @@
-import { supabaseServer } from '../../../lib/supabase'
+// app/api/jobs/route.js
+import { NextResponse } from "next/server";
 
-export async function POST(req){
-  try{
-    const form = await req.formData()
-    const payload = {
-      title: String(form.get('title')||''),
-      company: String(form.get('company')||''),
-      location: String(form.get('location')||''),
-      district: String(form.get('district')||''),
-      state: String(form.get('state')||''),
-      category: String(form.get('category')||''),
-      job_type: String(form.get('job_type')||'FULL_TIME'),
-      salary_min: Number(form.get('salary_min')||0),
-      salary_max: Number(form.get('salary_max')||0),
-      salary_currency: 'INR',
-      description: String(form.get('description')||''),
-      source: 'Manual',
-      external_url: String(form.get('external_url')||''),
-      is_active: true
+// Optional: run on the Edge for snappy responses
+export const runtime = "edge";
+
+const REQUIRED = ["title", "company", "district", "employmentType", "description"];
+
+// GET -> return an empty list (no DB yet, keeps UI happy)
+export async function GET() {
+  return NextResponse.json({ items: [], next: null }, { status: 200 });
+}
+
+// POST -> validate payload and echo back (no persistence in this build)
+export async function POST(req) {
+  try {
+    const body = await req.json();
+
+    const job = {
+      title: (body.title || "").toString().trim(),
+      company: (body.company || "").toString().trim(),
+      district: (body.district || "").toString().trim(),
+      city: (body.city || "").toString().trim(),
+      employmentType: (body.employmentType || "").toString().trim(), // FULL_TIME, PART_TIME, etc.
+      category: (body.category || "").toString().trim(),              // IT / Govt / Banking ...
+      salaryMin: Number(body.salaryMin ?? "") || null,
+      salaryMax: Number(body.salaryMax ?? "") || null,
+      url: (body.url || "").toString().trim() || null,
+      email: (body.email || "").toString().trim() || null,
+      description: (body.description || "").toString().trim(),
+    };
+
+    for (const key of REQUIRED) {
+      if (!job[key]) {
+        return NextResponse.json(
+          { ok: false, error: `Missing field: ${key}` },
+          { status: 400 }
+        );
+      }
     }
-    const supabase = supabaseServer()
-    const { error } = await supabase.from('jobs').insert(payload)
-    if(error) return Response.json({ ok:false, error: error.message }, { status: 400 })
-    return Response.json({ ok:true })
-  }catch(e){
-    return Response.json({ ok:false, error: e.message }, { status: 500 })
+
+    // No DB in this UI-only deploy. Echo back so the form can show success.
+    return NextResponse.json(
+      { ok: true, message: "Received. Storage disabled in this build.", job },
+      { status: 200 }
+    );
+  } catch {
+    return NextResponse.json(
+      { ok: false, error: "Invalid JSON body" },
+      { status: 400 }
+    );
   }
 }
