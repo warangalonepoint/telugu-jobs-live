@@ -2,38 +2,27 @@
 @tailwind components;
 @tailwind utilities;
 
-/* App theme */
-:root {
-  --bg: #0b0d12;
-  --card: #121520;
-  --muted: #8b93a7;
-  --ink: #e6e9f2;
-  --brand: #ff7a00;
+/* Lightweight design tokens */
+@layer base {
+  :root {
+    --card: 18 18 18;
+    --muted: 160 160 160;
+  }
+  * { box-sizing: border-box; }
 }
 
-html, body { height: 100%; }
-body {
-  background: radial-gradient(1200px 600px at 10% -10%, #141827 0%, #0b0d12 60%) fixed;
-  color: var(--ink);
+/* Reusable UI primitives */
+@layer components {
+  .card {
+    @apply rounded-2xl border border-white/10 bg-white/5 p-5;
+  }
+  .btn {
+    @apply inline-flex items-center gap-2 rounded-xl px-4 py-2 border border-white/10 bg-white/10 hover:bg-white/15 text-sm;
+  }
+  .input {
+    @apply w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 outline-none focus:ring-2 focus:ring-white/20;
+  }
+  .site-grid {
+    @apply grid gap-4 sm:grid-cols-2 lg:grid-cols-3;
+  }
 }
-
-/* Card */
-.card {
-  @apply rounded-2xl p-5 border border-white/5 bg-[color:var(--card)] shadow-[0_10px_40px_rgba(0,0,0,0.35)];
-}
-
-/* Buttons */
-.btn {
-  @apply inline-flex items-center justify-center rounded-xl px-4 py-2 text-sm font-medium transition;
-  background: linear-gradient(180deg, #202538 0%, #151827 100%);
-  border: 1px solid rgba(255,255,255,0.06);
-}
-.btn:hover { transform: translateY(-1px); }
-
-/* Input */
-.input {
-  @apply w-full rounded-xl border border-white/10 bg-transparent px-4 py-3 text-sm outline-none;
-}
-
-/* Simple grid for site cards */
-.site-grid { @apply grid gap-4 sm:grid-cols-2 lg:grid-cols-3; }
