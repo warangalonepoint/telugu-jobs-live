@@ -1,11 +1,11 @@
-// app/api/jobs/route.js
 import { NextResponse } from "next/server";
-import { getSupabaseClient } from "@/lib/supabase"; // use alias
+import { getSupabaseClient } from "@/lib/supabase"; // ✅ use alias, not ../../../
 
 export async function GET(request) {
   try {
     const supabase = getSupabaseClient();
 
+    // If env not set, return empty safely
     if (!supabase) {
       return NextResponse.json(
         { data: [], note: "Supabase env not configured" },
@@ -22,7 +22,9 @@ export async function GET(request) {
       .order("posted_at", { ascending: false })
       .limit(50);
 
-    if (q) query = query.ilike("title", `%${q}%`);
+    if (q) {
+      query = query.ilike("title", `%${q}%`);
+    }
 
     const { data, error } = await query;
     if (error) throw error;
@@ -35,4 +37,3 @@ export async function GET(request) {
     );
   }
 }
-
