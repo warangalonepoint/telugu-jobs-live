@@ -1,5 +1,5 @@
 import Hero from "@/components/hero";
-import SearchBar from "@/components/SearchBar";
+import SearchBar from "@/components/searchbar";
 import DistrictGrids from "@/components/districtgrids";
 
 export const metadata = {
