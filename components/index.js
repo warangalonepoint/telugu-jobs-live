@@ -2,3 +2,4 @@
 export { default as Hero } from "./hero";
 export { default as SearchBar } from "./searchbar";
 export { default as DistrictGrids } from "./districtgrids";
+import { Hero, SearchBar, DistrictGrids } from "@/components";
